@@ -1,0 +1,13 @@
+@import "loading.css";
+
+.darkmode-layer, .darkmode-toggle {
+    z-index: 500;
+}
+
+.input-group {
+    margin-bottom: 10px;
+}
+
+#form > .hidden {
+    display: none;
+}

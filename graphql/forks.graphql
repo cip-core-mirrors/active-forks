@@ -1,0 +1,89 @@
+query repositoryForks($owner: String!, $name: String!, $until: GitTimestamp!, $forksPerPage: Int!) {
+    repository (
+        owner: $owner
+        name: $name
+    ) {
+        url
+        name
+        owner {
+            login
+        }
+        primaryLanguage { name, color }
+        defaultBranchRef {
+            name
+            target {
+                ... on Commit {
+                    oid
+                    history(until: $until) {
+                        totalCount
+                        nodes {
+                            authoredDate
+                            committedDate
+                            oid
+                            id
+                            message
+                            deletions
+                            additions
+                            changedFiles
+                        }
+                    }
+                }
+            }
+        }
+        issues(filterBy: {states: [OPEN]}) { totalCount }
+        pullRequests(states: [OPEN]) { totalCount }
+        diskUsage
+        pushedAt
+        stargazerCount
+        watchers { totalCount }
+        forkCount
+        forks(
+            first: $forksPerPage
+            orderBy: { field: PUSHED_AT, direction: DESC }
+        ) {
+            totalCount
+            pageInfo {
+                startCursor
+                endCursor
+                hasNextPage
+                hasPreviousPage
+            }
+            nodes {
+                url
+                name
+                owner {
+                    login
+                }
+                primaryLanguage { name, color }
+                defaultBranchRef {
+                    name
+                    target {
+                        ... on Commit {
+                            oid
+                            history(until: $until) {
+                                totalCount
+                                nodes {
+                                    authoredDate
+                                    committedDate
+                                    oid
+                                    id
+                                    message
+                                    deletions
+                                    additions
+                                    changedFiles
+                                }
+                            }
+                        }
+                    }
+                }
+                issues(filterBy: {states: [OPEN]}) { totalCount }
+                pullRequests(states: [OPEN]) { totalCount }
+                diskUsage
+                pushedAt
+                stargazerCount
+                watchers { totalCount }
+                forkCount
+            }
+        }
+    }
+}

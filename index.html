@@ -15,9 +15,7 @@
     <script src="https://cdn.datatables.net/1.10.22/js/dataTables.bootstrap4.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.0/moment.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/darkmode-js@1.5.7/lib/darkmode-js.min.js"></script>
-    <style>
-        .darkmode-layer, .darkmode-toggle { z-index: 500; }
-    </style>
+    <link rel="stylesheet" href="css/styles.css">
 </head>
 
 <body class='mt-4 mb-2'>
@@ -45,6 +43,10 @@
                                       </button>
                                   </span>
                               </div>
+                              <div class="input-group">
+                                  <input id="token" name="token" class="form-control" type="text" placeholder="Auth Token">
+                              </div>
+                              <div id="loading" class="lds-ring"><div></div><div></div><div></div><div></div></div>
                           </form>
                         </div>
 
