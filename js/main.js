@@ -182,6 +182,7 @@ function initDT() {
       };
     }),
     order: [[sortColumnIdx, 'desc']],
+    scrollX: true,
   });
 }
 
