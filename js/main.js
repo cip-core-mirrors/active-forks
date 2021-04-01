@@ -58,12 +58,14 @@ function setLoading(isLoading) {
   fetching = isLoading;
   const classes = document.getElementById('loading').classList;
   isLoading ? classes.remove('hidden') : classes.add('hidden');
+
+  if (isLoading) {
+    // Remove any alerts, if any:
+    if ($('.alert')) $('.alert').remove();
+  }
 }
 
 function updateDT(data, isFirstCall = false) {
-  // Remove any alerts, if any:
-  if ($('.alert')) $('.alert').remove();
-
   const repository = data.repository;
   // Format dataset and redraw DataTable. Use second index for key name
   const dataSet = [];
