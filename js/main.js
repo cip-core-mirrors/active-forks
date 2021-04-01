@@ -197,17 +197,26 @@ async function graphQL(query, variables) {
     body: JSON.stringify(body),
   });
 
-  if (!result.ok) throw Error(result.statusText);
-
   const jsonResponse = await result.json();
+  if (!result.ok) {
+    console.error(jsonResponse);
+    throw Error(jsonResponse.message);
+  }
+
   return jsonResponse.data;
 }
 
 async function fetchAndShow(repo) {
-  if (!token) token = document.getElementById('token').value;
-  localStorage.setItem('token', token);
+  const tokenField = document.getElementById('token');
+  const localToken = tokenField.value;
+  if (localToken) token = localToken;
 
-  if (!token) return;
+  if (localToken) {
+    localStorage.setItem('token', localToken);
+  } else {
+    localStorage.removeItem('token');
+    return;
+  }
 
   repo = repo.replace('https://github.com/', '');
   repo = repo.replace('http://github.com/', '');
