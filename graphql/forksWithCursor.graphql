@@ -14,7 +14,10 @@ query repositoryForks($owner: String!, $name: String!, $until: GitTimestamp!, $f
             target {
                 ... on Commit {
                     oid
-                    history(until: $until) {
+                    history(
+                        until: $until
+                        first: 100
+                    ) {
                         totalCount
                         nodes {
                             authoredDate
@@ -40,7 +43,7 @@ query repositoryForks($owner: String!, $name: String!, $until: GitTimestamp!, $f
         forks(
             first: $forksPerPage
             after: $afterForkCursor
-            orderBy: { field: PUSHED_AT, direction: DESC }
+            orderBy: { field: STARGAZERS, direction: DESC }
         ) {
             totalCount
             pageInfo {
@@ -61,7 +64,10 @@ query repositoryForks($owner: String!, $name: String!, $until: GitTimestamp!, $f
                     target {
                         ... on Commit {
                             oid
-                            history(until: $until) {
+                            history(
+                                until: $until
+                                first: 100
+                            ) {
                                 totalCount
                                 nodes {
                                     authoredDate

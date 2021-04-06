@@ -104,7 +104,7 @@ function commitsDiff(historyA, historyB) {
 }
 
 function getCommitsHistory(repository) {
-  return repository.defaultBranchRef.target.history.nodes;
+  return repository.defaultBranchRef.target.history;
 }
 
 function parseRepository(repository, originalRepository) {
@@ -123,13 +123,13 @@ function parseRepository(repository, originalRepository) {
   if (originalRepository) {
     const historyA = getCommitsHistory(originalRepository);
     const historyB = getCommitsHistory(repository);
-    const diffBehind = commitsDiff(historyA, historyB);
-    const diffAhead = commitsDiff(historyB, historyA);
+    const diffBehind = commitsDiff(historyA.nodes, historyB.nodes);
+    const diffAhead = commitsDiff(historyB.nodes, historyA.nodes);
     row.push(...[
-      formatInteger(-diffBehind.commits),
-      formatInteger(diffAhead.commits),
-      formatInteger(diffAhead.additions),
-      formatInteger(-diffAhead.deletions),
+      diffBehind.commits !== undefined ? formatInteger(-diffBehind.commits) : `over -100`,
+      diffBehind.commits !== undefined ? formatInteger(diffAhead.commits) : `over 100`,
+      diffAhead.commits !== undefined ? formatInteger(diffAhead.additions) : `over ${diffAhead.additions}`,
+      diffAhead.commits !== undefined ? formatInteger(-diffAhead.deletions) : `over ${-diffAhead.deletions}`,
     ]);
   } else {
     row.push(...[0, 0, 0, 0]);
@@ -139,8 +139,6 @@ function parseRepository(repository, originalRepository) {
 }
 
 function formatInteger(integer) {
-  if (integer === undefined) return 'over 100';
-
   return `${integer > 0 ? '+' : ''}${integer}`;
 }
 
@@ -228,11 +226,12 @@ async function fetchAndShow(repo) {
   const owner = repoInfo[0];
   const name = repoInfo[1];
 
+  const info = window.forkTable.page.info();
   const variables = {
     owner: owner,
     name: name,
     until: new Date().toISOString(),
-    forksPerPage: 100,
+    forksPerPage: info.length - 1,
   };
 
   try {
@@ -241,14 +240,15 @@ async function fetchAndShow(repo) {
     const data = await graphQL(query, variables);
     updateDT(data, true);
 
-    let nextQuery = undefined;
     let pageInfo = data.repository.forks.pageInfo;
+    let nextQuery = undefined;
     while (pageInfo.hasNextPage) {
       if (!nextQuery) {
         response = await fetch('graphql/forksWithCursor.graphql');
         nextQuery = await response.text();
-        variables.afterForkCursor = pageInfo.endCursor;
+        variables.forksPerPage = info.length;
       }
+      variables.afterForkCursor = pageInfo.endCursor;
       const nextData = await graphQL(nextQuery, variables);
       updateDT(nextData, false);
       pageInfo = nextData.repository.forks.pageInfo;
