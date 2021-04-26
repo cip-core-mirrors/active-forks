@@ -1,8 +1,15 @@
+let token = localStorage.getItem('token');
+
 window.addEventListener('load', () => {
   initDT(); // Initialize the DatatTable and window.columnNames variables
   addDarkmodeWidget();
 
   const repo = getRepoFromUrl();
+
+  if (token) {
+    const tokenElement = document.getElementById('token');
+    tokenElement.value = token;
+  }
 
   if (repo) {
     document.getElementById('q').value = repo;
@@ -19,7 +26,12 @@ function addDarkmodeWidget() {
   new Darkmode( { label: '🌓' } ).showWidget();
 }
 
-function fetchData() {
+let fetching = false;
+async function fetchData() {
+  if (fetching) return;
+
+  setLoading(true);
+
   const repo = document.getElementById('q').value;
   const re = /[-_\w]+\/[-_.\w]+/;
 
@@ -30,107 +42,154 @@ function fetchData() {
   }
 
   if (re.test(repo)) {
-    fetchAndShow(repo);
+    await fetchAndShow(repo);
   } else {
     showMsg(
       'Invalid GitHub repository! Format is &lt;username&gt;/&lt;repo&gt;',
       'danger'
     );
   }
+
+  setLoading(false);
 }
 
-function updateDT(data) {
-  // Remove any alerts, if any:
-  if ($('.alert')) $('.alert').remove();
+function setLoading(isLoading) {
+  fetching = isLoading;
+  const classes = document.getElementById('loading').classList;
+  isLoading ? classes.remove('hidden') : classes.add('hidden');
 
-  // Format dataset and redraw DataTable. Use second index for key name
-  const forks = [];
-  for (let fork of data) {
-    fork.repoLink = `<a href="https://github.com/${fork.full_name}">Link</a>`;
-    fork.ownerName = fork.owner ? fork.owner.login : '<strike><em>Unknown</em></strike>';
-    forks.push(fork);
+  if (isLoading) {
+    // Remove any alerts, if any:
+    if ($('.alert')) $('.alert').remove();
   }
-  const dataSet = forks.map(fork =>
-    window.columnNamesMap.map(colNM => fork[colNM[1]])
-  );
+}
+
+async function updateDT(repository, forks, history) {
+  const dataSet = [];
+
+  let isFirstCall = history === undefined;
+  if (isFirstCall) {
+    dataSet.push(await parseRepository(repository));
+    history = await getCommitsHistory(repository);
+  }
+
+  const promises = [];
+  for (const fork of forks) {
+    promises.push(parseRepository(fork, history));
+  }
+
+  const responses = await Promise.allSettled(promises);
+  dataSet.push(...responses.filter(response => response.status === 'fulfilled').map(response => response.value));
+
+  if (isFirstCall) window.forkTable.clear();
+
   window.forkTable
-    .clear()
-    .rows.add(dataSet)
-    .draw();
+      .rows.add(dataSet)
+      .draw();
+
+  return history;
 }
 
 function initDT() {
   // Create ordered Object with column name and mapped display name
   window.columnNamesMap = [
-    // [ 'Repository', 'full_name' ],
-    ['Link', 'repoLink'], // custom key
-    ['Owner', 'ownerName'], // custom key
-    ['Name', 'name'],
-    ['Branch', 'default_branch'],
-    ['Stars', 'stargazers_count'],
-    ['Forks', 'forks'],
-    ['Open Issues', 'open_issues_count'],
-    ['Size', 'size'],
-    ['Last Push', 'pushed_at'],
+    'Link',
+    'Owner',
+    'Name',
+    'Main Branch',
+    'Stars',
+    'Forks',
+    'Open Issues',
+    'Size',
+    'Last Push',
+    'Commits Behind',
+    'Commits Ahead',
+    //'Additions',
+    //'Deletions',
   ];
 
   // Sort by stars:
   const sortColName = 'Stars';
-  const sortColumnIdx = window.columnNamesMap
-    .map(pair => pair[0])
-    .indexOf(sortColName);
+  const sortColumnIdx = window.columnNamesMap.indexOf(sortColName);
 
   // Use first index for readable column name
   // we use moment's fromNow() if we are rendering for `pushed_at`; better solution welcome
   window.forkTable = $('#forkTable').DataTable({
     columns: window.columnNamesMap.map(colNM => {
       return {
-        title: colNM[0],
+        title: colNM,
         render:
-          colNM[1] === 'pushed_at'
-            ? (data, type, _row) => {
-                if (type === 'display') {
-                  return moment(data).fromNow();
+            colNM === 'Last Push'
+                ? (data, type, _row) => {
+                  if (type === 'display') {
+                    return moment(data).fromNow();
+                  }
+                  return data;
                 }
-                return data;
-              }
-            : null,
+                : null,
       };
     }),
     order: [[sortColumnIdx, 'desc']],
-    // paging: false,
-    searchBuilder:{
-      // all options at default        
-    }
+    scrollX: true,
   });
-  let table = window.forkTable;
-  new $.fn.dataTable.SearchBuilder(table, {});
-  table.searchBuilder.container().prependTo(table.table().container());
 }
 
-function fetchAndShow(repo) {
+async function fetchAndShow(repo) {
+  const tokenField = document.getElementById('token');
+  const localToken = tokenField.value;
+  if (localToken) token = localToken;
+
+  if (localToken) {
+    localStorage.setItem('token', localToken);
+  } else {
+    localStorage.removeItem('token');
+    return;
+  }
+
   repo = repo.replace('https://github.com/', '');
   repo = repo.replace('http://github.com/', '');
   repo = repo.replace(/\.git$/, '');
 
-  fetch(
-    `https://api.github.com/repos/${repo}/forks?sort=stargazers&per_page=100`
-  )
-    .then(response => {
-      if (!response.ok) throw Error(response.statusText);
-      return response.json();
-    })
-    .then(data => {
-      updateDT(data);
-    })
-    .catch(error => {
-      const msg =
+  const repoInfo = repo.split('/');
+  const owner = repoInfo[0];
+  const name = repoInfo[1];
+
+  const info = window.forkTable.page.info();
+
+  try {
+    const repository = await getRepository(owner, name);
+    let forks = await getRepositoryForks(repository, info.length);
+
+    const history = await updateDT(repository, forks);
+
+    const forksCount = repository.forks_count;
+    let totalForks = forks.length;
+    updateProgression(totalForks, forksCount);
+    let page = 1;
+    while (forks.length === info.length) {
+      forks = await getRepositoryForks(repository, info.length, ++page);
+      totalForks += forks.length;
+      await updateDT(repository, forks, history);
+      updateProgression(totalForks, forksCount);
+      console.log(forks.length);
+    }
+    hideProgression();
+  } catch (error) {
+    const msg =
         error.toString().indexOf('Forbidden') >= 0
-          ? 'Error: API Rate Limit Exceeded'
-          : error;
-      showMsg(`${msg}. Additional info in console`, 'danger');
-      console.error(error);
-    });
+            ? 'Error: API Rate Limit Exceeded'
+            : error;
+    showMsg(`${msg}. Additional info in console`, 'danger');
+    console.error(error);
+  }
+}
+
+function updateProgression(count, total) {
+  document.getElementById('progression').innerHTML = `Retrieving forks (${parseInt(count / total * 100)}%)`;
+}
+
+function hideProgression() {
+  document.getElementById('progression').innerHTML = '';
 }
 
 function showMsg(msg, type) {
@@ -150,10 +209,4 @@ function showMsg(msg, type) {
             ${msg}
         </div>
     `;
-}
-
-function getRepoFromUrl() {
-  const urlRepo = location.hash && location.hash.slice(1);
-
-  return urlRepo && decodeURIComponent(urlRepo);
 }
