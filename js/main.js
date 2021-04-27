@@ -99,11 +99,11 @@ function initDT() {
     'Main Branch',
     'Stars',
     'Forks',
-    'Open Issues',
+    'Open\nIssues',
     'Size',
-    'Last Push',
-    'Commits Behind',
-    'Commits Ahead',
+    'Last\nPush',
+    'Commits\nBehind',
+    'Commits\nAhead',
     //'Additions',
     //'Deletions',
   ];
@@ -171,7 +171,6 @@ async function fetchAndShow(repo) {
       totalForks += forks.length;
       await updateDT(repository, forks, history);
       updateProgression(totalForks, forksCount);
-      console.log(forks.length);
     }
     hideProgression();
   } catch (error) {

@@ -4,7 +4,6 @@ async function callApi(url, parameters = {}) {
     if (Object.keys(parameters).length > 0) {
         url = `${url}?${Object.entries(parameters).map(entry => `${entry[0]}=${encodeURIComponent(entry[1])}`).join('&')}`;
     }
-    console.log(url);
 
     const result = await fetch(url, {
         method: 'GET',
@@ -19,9 +18,7 @@ async function callApi(url, parameters = {}) {
         //throw Error(result);
     }
 
-    const response = await result.json();
-    console.log(response);
-    return response;
+    return await result.json();
 }
 
 async function getRepository(owner, repo) {
