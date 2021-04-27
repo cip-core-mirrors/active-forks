@@ -44,7 +44,7 @@ function getRepoFromUrl() {
 
 async function parseRepository(repository, originalRepositoryHistory) {
     const row = [
-        `<a href="${repository.url}">Link</a>`,
+        `<a href="${repository.html_url}" target="_blank">Link</a>`,
         repository.owner ? repository.owner.login : '<strike><em>Unknown</em></strike>',
         repository.name,
         repository.default_branch,
