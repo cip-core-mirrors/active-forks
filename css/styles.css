@@ -13,6 +13,14 @@
     justify-content: flex-end;
 }
 
+.input-group > :first-child {
+    margin-left: 0;
+}
+
+.input-group > * {
+    margin-left: 5px;
+}
+
 .progression {
     position: relative !important;
     text-align: center;
