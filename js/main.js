@@ -9,6 +9,7 @@ window.addEventListener('load', () => {
   if (token) {
     const tokenElement = document.getElementById('token');
     tokenElement.value = token;
+    toggleToken();
   }
 
   if (repo) {
@@ -28,7 +29,7 @@ function toggleToken() {
 
   const content = button.parentElement.previousElementSibling;
   content.classList.toggle('hidden');
-  button.innerHTML = content.classList.contains('hidden') ? 'Show' : 'Collapse';
+  button.innerHTML = content.classList.contains('hidden') ? 'Show Token' : 'Hide Token';
 }
 
 function addDarkmodeWidget() {
