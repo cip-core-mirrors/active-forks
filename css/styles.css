@@ -4,14 +4,26 @@
     z-index: 500;
 }
 
+.hidden {
+    display: none;
+}
+
 .input-group {
     margin-bottom: 10px;
+    justify-content: flex-end;
 }
 
 .progression {
     position: relative !important;
     text-align: center;
     margin: 0 auto;
+}
+
+#rate-limit {
+    font-size: x-small;
+    padding-top: 0;
+    padding-bottom: 0;
+    height: 100%;
 }
 
 #form > .hidden {

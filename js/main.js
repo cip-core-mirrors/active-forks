@@ -22,6 +22,15 @@ document.getElementById('form').addEventListener('submit', e => {
   fetchData();
 });
 
+function toggleToken() {
+  const button = document.getElementById('collapsible');
+  button.classList.toggle('active');
+
+  const content = button.parentElement.previousElementSibling;
+  content.classList.toggle('hidden');
+  button.innerHTML = content.classList.contains('hidden') ? 'Show' : 'Collapse';
+}
+
 function addDarkmodeWidget() {
   new Darkmode( { label: '🌓' } ).showWidget();
 }

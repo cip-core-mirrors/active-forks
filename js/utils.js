@@ -1,17 +1,31 @@
 const githubUrl = 'https://api.github.com';
 
+let rateLimit;
+
 async function callApi(url, parameters = {}) {
     if (Object.keys(parameters).length > 0) {
         url = `${url}?${Object.entries(parameters).map(entry => `${entry[0]}=${encodeURIComponent(entry[1])}`).join('&')}`;
     }
 
+    const headers = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+    };
+
     const result = await fetch(url, {
         method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-        },
+        headers: headers,
+        //cache: 'no-cache',
     });
+
+    if (rateLimit === undefined) {
+        rateLimit = document.getElementById('rate-limit');
+        rateLimit.parentElement.classList.remove('hidden');
+    }
+    const responseHeaders = result.headers;
+    const diff = new Date(responseHeaders.get('X-RateLimit-Reset') * 1000) - new Date();
+    const minutes = Math.floor(diff / 1000 / 60);
+    rateLimit.innerHTML = `Quota : ${responseHeaders.get('X-RateLimit-Remaining')}/${responseHeaders.get('X-RateLimit-Limit')}<br>Resets in ${minutes} min`;
 
     if (!result.ok) {
         console.error(result);
